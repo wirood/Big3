@@ -1554,9 +1554,9 @@
                 </div>
                 
                 <div class="action-buttons">
-                    <button onclick="exportHighResImage('l', 'download')" class="btn-act btn-save" id="save-btn-info"><i class="fa-solid fa-download"></i> บันทึกรูปภาพ (HD)</button>
+                    <button onclick="exportHighResImage('l', 'download')" class="btn-act btn-save" id="save-btn-info"><i class="fa-solid fa-download"></i> บันทึกรูปภาพ (Ultra HD)</button>
                     <button onclick="exportHighResImage('l', 'share')" class="btn-act btn-share" id="share-btn-info"><i class="fa-solid fa-share-nodes"></i> แชร์รูปภาพ</button>
-                    <button onclick="saveAsPDF('l')" class="btn-act btn-pdf" id="pdf-btn-info"><i class="fa-solid fa-file-pdf"></i> บันทึก PDF</button>
+                    <button onclick="saveAsPDF('l')" class="btn-act btn-pdf" id="pdf-btn-info"><i class="fa-solid fa-file-pdf"></i> บันทึก PDF (Ultra HD)</button>
                 </div>
             </div>
         `;
@@ -1725,9 +1725,9 @@
                 </div>
                 
                 <div class="action-buttons">
-                    <button onclick="exportHighResImage('p', 'download')" class="btn-act btn-save" id="save-btn-tbl"><i class="fa-solid fa-download"></i> บันทึกรูปภาพ (HD)</button>
+                    <button onclick="exportHighResImage('p', 'download')" class="btn-act btn-save" id="save-btn-tbl"><i class="fa-solid fa-download"></i> บันทึกรูปภาพ (Ultra HD)</button>
                     <button onclick="exportHighResImage('p', 'share')" class="btn-act btn-share" id="share-btn-tbl"><i class="fa-solid fa-share-nodes"></i> แชร์รูปภาพ</button>
-                    <button onclick="saveAsPDF('p')" class="btn-act btn-pdf" id="pdf-btn-tbl"><i class="fa-solid fa-file-pdf"></i> บันทึก PDF</button>
+                    <button onclick="saveAsPDF('p')" class="btn-act btn-pdf" id="pdf-btn-tbl"><i class="fa-solid fa-file-pdf"></i> บันทึก PDF (Ultra HD)</button>
                 </div>
             </div>
         `;
@@ -1751,45 +1751,63 @@
         stickyBar.classList.toggle('show', lastScrollY > 200);
     }
 
-    // ฟังก์ชันกลางสำหรับสร้าง Canvas ความละเอียดสูงสุด (Scale 3x, PNG Lossless)
+    // ฟังก์ชันกลางสำหรับสร้าง Canvas ความละเอียดสูงสุดระดับ 4K-5K (Smart Ultra HD)
     async function renderHighResCanvas() {
         const target = document.getElementById("capture-area");
         const scrollBox = document.querySelector(".report-scroll-box");
         if (scrollBox) scrollBox.scrollLeft = 0;
         window.scrollTo(0, 0);
 
-        await new Promise(r => setTimeout(r, 250));
+        // รอให้ฟอนต์ Prompt โหลดครบ 100% ก่อนสร้างภาพ
+        if (document.fonts && document.fonts.ready) {
+            await document.fonts.ready;
+        }
+        await new Promise(r => setTimeout(r, 300));
+
+        const width = target.scrollWidth;
+        const height = target.scrollHeight;
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+        // คำนวณ Scale สูงสุดที่คมชัดที่สุดและปลอดภัยต่อหน่วยความจำของแต่ละอุปกรณ์
+        let optimalScale = 5; // บนคอมพิวเตอร์จัดเต็มระดับ 5K (5x)
+        if (isMobile) {
+            // มือถือ (โดยเฉพาะ iOS Safari) จำกัดพื้นที่ Canvas ที่ ~16.7M พิกเซล
+            const maxSafePixels = 15500000;
+            const maxSafeScale = Math.sqrt(maxSafePixels / (width * height));
+            optimalScale = Math.min(4, Math.floor(maxSafeScale * 10) / 10);
+        }
 
         return await html2canvas(target, {
-            scale: 3, // ความละเอียดสูงระดับ Ultra HD (3x)
+            scale: optimalScale,
             backgroundColor: "#ffffff",
             useCORS: true,
             allowTaint: false,
+            imageTimeout: 15000,
+            logging: false,
             scrollX: 0,
             scrollY: 0,
-            windowWidth: target.scrollWidth,
-            windowHeight: target.scrollHeight
+            windowWidth: width,
+            windowHeight: height
         });
     }
 
-    // ฟังก์ชันบันทึกและแชร์รูปภาพ (รองรับทั้ง PC และ มือถือ iOS/Android)
+    // ฟังก์ชันบันทึกและแชร์รูปภาพระดับ 4K-5K (PNG Lossless)
     async function exportHighResImage(orientation, mode) {
         const btnId = mode === 'share'
             ? (orientation === 'l' ? 'share-btn-info' : 'share-btn-tbl')
             : (orientation === 'l' ? 'save-btn-info' : 'save-btn-tbl');
         const btn = document.getElementById(btnId);
         const originalHTML = btn.innerHTML;
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> กำลังสร้างภาพ HD...';
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> กำลังสร้างภาพ Ultra HD...';
         btn.disabled = true;
 
-        const fileName = `FWD_Big3_${orientation === 'l' ? 'Info' : 'Table'}_Plan${currentPlan}_Age${document.getElementById('age-input').value}.png`;
+        const fileName = `FWD_Big3_${orientation === 'l' ? 'Info' : 'Table'}_Plan${currentPlan}_Age${document.getElementById('age-input').value}_4K.png`;
 
         try {
             const canvas = await renderHighResCanvas();
             const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png', 1.0));
             const file = new File([blob], fileName, { type: 'image/png' });
 
-            // โหมดแชร์ (เปิด Share Sheet บนมือถือ เพื่อส่งเข้า LINE หรือกด "บันทึกรูปภาพ" ลงอัลบั้มได้ทันที)
             if (mode === 'share' && navigator.canShare && navigator.canShare({ files: [file] })) {
                 await navigator.share({
                     files: [file],
@@ -1801,7 +1819,6 @@
                 return;
             }
 
-            // โหมดดาวน์โหลดตรงลงเครื่อง (ใช้ได้ทั้ง PC และ Android)
             const blobUrl = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = blobUrl;
@@ -1810,14 +1827,13 @@
             link.click();
             document.body.removeChild(link);
 
-            // หากเป็นมือถือ iOS (ซึ่งบางครั้ง Safari ไม่ยอมดาวน์โหลดตรง) หรือกดแชร์บน PC ให้แสดงภาพพรีวิวเพื่อให้แตะค้าง/คลิกขวาได้ด้วย
             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
             if (isIOS || mode === 'share') {
                 const imgData = canvas.toDataURL("image/png", 1.0);
                 const wrapper = document.getElementById('report-content-wrapper');
                 wrapper.innerHTML = `
                     <div style="text-align:center; padding: 20px; max-width: 900px; margin: 0 auto;">
-                        <h2 style="color: #06C755; margin:0 0 10px 0;"><i class="fa-solid fa-circle-check"></i> สร้างภาพความละเอียดสูงสำเร็จ!</h2>
+                        <h2 style="color: #06C755; margin:0 0 10px 0;"><i class="fa-solid fa-circle-check"></i> สร้างภาพ Ultra HD (${canvas.width} × ${canvas.height} px) สำเร็จ!</h2>
                         <div style="background: #fef3c7; color: #92400e; padding: 14px 18px; border-radius: 12px; margin-bottom: 18px; font-size: 14px; text-align:left; line-height: 1.5;">
                             • <b>บนมือถือ (iPhone/Android):</b> แตะค้างที่รูปภาพด้านล่างแล้วเลือก <b>"บันทึกลงแอปรูปภาพ"</b> หรือกดปุ่มแชร์<br>
                             • <b>บนคอมพิวเตอร์:</b> ไฟล์ถูกดาวน์โหลดลงเครื่องแล้ว หรือคลิกขวาที่รูปเลือก Save image as...
@@ -1830,11 +1846,11 @@
                     </div>
                 `;
             } else {
-                btn.innerHTML = '<i class="fa-solid fa-check"></i> บันทึกสำเร็จ!';
+                btn.innerHTML = `<i class="fa-solid fa-check"></i> บันทึกสำเร็จ (${canvas.width}px)`;
                 setTimeout(() => {
                     btn.innerHTML = originalHTML;
                     btn.disabled = false;
-                }, 1800);
+                }, 2000);
             }
         } catch (err) {
             if (err.name !== 'AbortError') {
@@ -1845,35 +1861,42 @@
         }
     }
 
+    // ฟังก์ชันบันทึก PDF แบบไร้การบีบอัด (Lossless Ultra HD)
     async function saveAsPDF(orientation) {
         const btnId = orientation === 'l' ? 'pdf-btn-info' : 'pdf-btn-tbl';
         const btn = document.getElementById(btnId);
         const originalHTML = btn.innerHTML;
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> สร้าง PDF ความละเอียดสูง...';
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> สร้าง PDF Ultra HD...';
         btn.disabled = true;
 
         try {
             const canvas = await renderHighResCanvas();
             const imgData = canvas.toDataURL('image/png', 1.0);
             const { jsPDF } = window.jspdf;
-            const pdf = new jsPDF(orientation, 'mm', 'a4');
+            const pdf = new jsPDF({
+                orientation: orientation,
+                unit: 'mm',
+                format: 'a4',
+                compress: false // ปิดการบีบอัดเพื่อให้ภาพคมชัดสูงสุด
+            });
+
             const pdfWidth = pdf.internal.pageSize.getWidth();
             const pdfHeight = pdf.internal.pageSize.getHeight();
             
-            const margin = 10;
+            const margin = 8;
             let imgW = pdfWidth - (margin * 2);
             let imgH = (canvas.height * imgW) / canvas.width;
 
-            // ปรับสัดส่วนอัตโนมัติไม่ให้ล้นความสูงหน้ากระดาษ A4
             if (imgH > pdfHeight - (margin * 2)) {
                 imgH = pdfHeight - (margin * 2);
                 imgW = (canvas.width * imgH) / canvas.height;
             }
             const xOffset = (pdfWidth - imgW) / 2;
+            const yOffset = (pdfHeight - imgH) / 2;
             
-            pdf.addImage(imgData, 'PNG', xOffset, margin, imgW, imgH, undefined, 'FAST');
+            pdf.addImage(imgData, 'PNG', xOffset, yOffset, imgW, imgH, undefined, 'NONE');
             
-            const fileName = `FWD_Big3_Plan${currentPlan}_Age${document.getElementById('age-input').value}.pdf`;
+            const fileName = `FWD_Big3_Plan${currentPlan}_Age${document.getElementById('age-input').value}_UltraHD.pdf`;
             pdf.save(fileName);
         } catch (err) {
             alert("เกิดข้อผิดพลาดในการสร้าง PDF: " + err.message);
