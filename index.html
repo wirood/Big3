@@ -33,6 +33,18 @@
 
     * { box-sizing: border-box; }
 
+    /* ป้องกันมือถือ (iOS/Android) แอบขยายขนาดฟอนต์ในพื้นที่ส่งออกภาพ */
+    html, body, #capture-area, #capture-area * {
+        -webkit-text-size-adjust: 100% !important;
+        -moz-text-size-adjust: 100% !important;
+        -ms-text-size-adjust: 100% !important;
+        text-size-adjust: 100% !important;
+    }
+    #capture-area, #capture-area * {
+        max-height: 999999px; /* ปิด Font Boosting ของ Android Chrome */
+        word-break: normal !important; /* ป้องกันข้อความหลังเลขข้อตกบรรทัด */
+    }
+
     body {
         font-family: 'Prompt', sans-serif;
         background-color: var(--bg-color);
@@ -1571,7 +1583,7 @@
         window.scrollTo(0,0);
     }
 
-    // 2. ฟังก์ชันสร้างตารางผลประโยชน์แนวตั้ง (ล็อกขนาด 900px ไม่ให้เพี้ยนบนมือถือ)
+    // 2. ฟังก์ชันสร้างตารางผลประโยชน์แนวตั้ง (ล็อกขนาด 900px และล็อกฟอนต์ไม่ให้เพี้ยนบนมือถือ)
     function openDetailedTable() {
         const age = parseInt(document.getElementById('age-input').value);
         if (isNaN(age) || age < 20 || age > 60) {
@@ -1600,9 +1612,9 @@
                             .rp-row:last-child { border-bottom: none; padding-bottom: 0; margin-bottom: 0; }
                             .rp-row span.val { font-weight: 700; color: #e86614; }
                             
-                            #capture-area table { width: 100%; border-collapse: collapse; text-align: center; font-size: 14px; margin-bottom: 25px; }
-                            #capture-area th { background: #e86614; color: white; padding: 12px; border: 1px solid #c8540d; font-weight: 500; }
-                            #capture-area td { padding: 10px 12px; border: 1px solid #e2e8f0; color: #1e293b; }
+                            #capture-area table { width: 100%; border-collapse: collapse; text-align: center; font-size: 14px !important; margin-bottom: 25px; table-layout: fixed; }
+                            #capture-area th { background: #e86614; color: white; padding: 12px 8px; border: 1px solid #c8540d; font-weight: 500; white-space: nowrap; }
+                            #capture-area td { padding: 10px 12px; border: 1px solid #e2e8f0; color: #1e293b; font-size: 14px !important; line-height: 1.45; }
                             #capture-area tr:nth-child(even) td { background: #f8fafc; }
                             .fw-bold { font-weight: 700; color: #e86614; }
                             .text-left { text-align: left; }
@@ -1665,11 +1677,11 @@
                         <table>
                             <thead>
                                 <tr>
-                                    <th>ปีกรมธรรม์ที่</th>
-                                    <th>อายุ (ปี)</th>
-                                    <th>เบี้ยประกันภัยรายปี (บาท)</th>
-                                    <th>เบี้ยประกันภัยสะสม (บาท)</th>
-                                    <th>ความคุ้มครอง 3 กลุ่มโรคร้ายแรง (บาท)</th>
+                                    <th style="width: 14%;">ปีกรมธรรม์ที่</th>
+                                    <th style="width: 12%;">อายุ (ปี)</th>
+                                    <th style="width: 22%;">เบี้ยประกันภัยรายปี (บาท)</th>
+                                    <th style="width: 22%;">เบี้ยประกันภัยสะสม (บาท)</th>
+                                    <th style="width: 30%;">ความคุ้มครอง 3 กลุ่มโรคร้ายแรง (บาท)</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -1758,7 +1770,6 @@
         if (scrollBox) scrollBox.scrollLeft = 0;
         window.scrollTo(0, 0);
 
-        // รอให้ฟอนต์ Prompt โหลดครบ 100% ก่อนสร้างภาพ
         if (document.fonts && document.fonts.ready) {
             await document.fonts.ready;
         }
@@ -1768,10 +1779,8 @@
         const height = target.scrollHeight;
         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
-        // คำนวณ Scale สูงสุดที่คมชัดที่สุดและปลอดภัยต่อหน่วยความจำของแต่ละอุปกรณ์
         let optimalScale = 5; // บนคอมพิวเตอร์จัดเต็มระดับ 5K (5x)
         if (isMobile) {
-            // มือถือ (โดยเฉพาะ iOS Safari) จำกัดพื้นที่ Canvas ที่ ~16.7M พิกเซล
             const maxSafePixels = 15500000;
             const maxSafeScale = Math.sqrt(maxSafePixels / (width * height));
             optimalScale = Math.min(4, Math.floor(maxSafeScale * 10) / 10);
@@ -1877,7 +1886,7 @@
                 orientation: orientation,
                 unit: 'mm',
                 format: 'a4',
-                compress: false // ปิดการบีบอัดเพื่อให้ภาพคมชัดสูงสุด
+                compress: false
             });
 
             const pdfWidth = pdf.internal.pageSize.getWidth();
