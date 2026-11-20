@@ -843,14 +843,78 @@
     }
 
     /* --- Report Overlay & Lightbox --- */
-    #report-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; min-height: 100vh; background: #f1f5f9; z-index: 999999; padding: 20px 0; }
-    #report-content-wrapper { width: 100%; overflow-x: auto; padding: 0 20px 50px 20px; }
-    .close-report-btn { position: fixed; top: 18px; right: 18px; background: var(--primary); color: white; border: none; border-radius: 50%; width: 46px; height: 46px; font-size: 20px; cursor: pointer; z-index: 1000000; box-shadow: 0 4px 14px rgba(232,102,20,0.35); display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+    #report-overlay {
+        display: none;
+        position: absolute;
+        top: 0; left: 0;
+        width: 100%;
+        min-height: 100vh;
+        background: #f1f5f9;
+        z-index: 999999;
+        padding: 20px 0;
+    }
+    #report-content-wrapper {
+        width: 100%;
+        padding: 0 15px 60px 15px;
+    }
+    .report-scroll-box {
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 10px;
+    }
+    .mobile-scroll-hint {
+        display: none;
+        text-align: center;
+        font-size: 12.5px;
+        color: #64748b;
+        margin-bottom: 10px;
+    }
+    .close-report-btn {
+        position: fixed;
+        top: 18px; right: 18px;
+        background: var(--primary);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 46px; height: 46px;
+        font-size: 20px;
+        cursor: pointer;
+        z-index: 1000000;
+        box-shadow: 0 4px 14px rgba(232,102,20,0.35);
+        display: flex; align-items: center; justify-content: center;
+        transition: 0.2s;
+    }
     .close-report-btn:hover { background: var(--primary-dark); transform: scale(1.06); }
 
-    .action-buttons { text-align: center; margin-top: 28px; margin-bottom: 50px; display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; }
-    .btn-act { padding: 12px 20px; border-radius: 10px; font-family: 'Prompt', sans-serif; cursor: pointer; font-size: 15px; border: none; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: 0.25s; min-width: 165px; }
+    .action-buttons {
+        text-align: center;
+        margin-top: 22px;
+        margin-bottom: 40px;
+        display: flex;
+        justify-content: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        position: sticky;
+        left: 0;
+    }
+    .btn-act {
+        padding: 13px 20px;
+        border-radius: 12px;
+        font-family: 'Prompt', sans-serif;
+        cursor: pointer;
+        font-size: 15px;
+        border: none;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: 0.25s;
+        min-width: 170px;
+    }
     .btn-save { background: var(--secondary); color: white; box-shadow: 0 4px 14px rgba(6, 199, 85, 0.25); }
+    .btn-share { background: #2563eb; color: white; box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25); }
     .btn-pdf { background: #dc2626; color: white; box-shadow: 0 4px 14px rgba(220, 38, 38, 0.25); }
     .btn-act:hover:not(:disabled) { opacity: 0.92; transform: translateY(-2px); }
     .btn-act:disabled { opacity: 0.7; cursor: not-allowed; }
@@ -861,10 +925,10 @@
 
     @media print {
         body, * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
-        #main-content, #sticky-bar, .action-buttons, .close-report-btn { display: none !important; }
+        #main-content, #sticky-bar, .action-buttons, .close-report-btn, .mobile-scroll-hint { display: none !important; }
         body { background: white; padding: 0; }
         #report-overlay { position: static; min-height: auto; padding: 0; display: block !important; background: white !important; }
-        #report-content-wrapper { padding: 0 !important; overflow: visible !important; }
+        #report-content-wrapper, .report-scroll-box { padding: 0 !important; overflow: visible !important; }
         #capture-area { box-shadow: none !important; margin: 0 auto !important; }
     }
 
@@ -882,6 +946,8 @@
         .agent-info-wrapper { flex-direction: row; }
         .btn-call { width: 100%; }
         .sticky-bar { bottom: 0; width: 100%; border-radius: 18px 18px 0 0; padding: 14px 18px; }
+        .mobile-scroll-hint { display: block; }
+        .btn-act { width: 100%; max-width: 320px; }
     }
 </style>
 </head>
@@ -1397,96 +1463,99 @@
         let htmlContent = `
             <button class="close-report-btn" onclick="closeReport()"><i class="fa-solid fa-xmark"></i></button>
             <div id="report-content-wrapper">
-                <div id="capture-area" style="margin: 0 auto; width: 1100px; max-width: 1100px; background: white; padding: 40px; border-radius: 16px; position: relative; box-sizing: border-box; font-family: 'Prompt';">
-                    
-                    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 25px;">
-                        <div>
-                            <h1 style="color: #e86614; font-size: 38px; margin: 0; font-weight: 700; line-height: 1;">เอฟดับบลิวดี บิ๊ก ทรี (FWD Big 3)</h1>
-                            <div style="color: #64748b; font-size: 16px; margin-top: 8px;">แผน ${formatNum(currentPlan)} บาท | อายุรับประกัน: ${age} ปี | เพศ: ${txtGender} | ระยะเวลาคุ้มครอง 5 ปี</div>
-                        </div>
-                        <div>
-                            <img src="logo.png" alt="FWD Insurance" style="height: 60px; object-fit: contain;" onerror="this.style.display='none'">
-                        </div>
-                    </div>
-
-                    <div style="display: flex; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #fce4d6;">
-                        <div style="background: #fceea9; width: 190px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: 700; font-size: 22px; color: #1e3b2b; text-align: center; padding: 15px;">
-                            ความคุ้มครอง<br>หลัก
-                        </div>
+                <div class="mobile-scroll-hint"><i class="fa-solid fa-arrows-left-right"></i> เลื่อนซ้าย-ขวาเพื่อดูภาพเต็ม หรือกดปุ่มด้านล่างเพื่อบันทึก/แชร์</div>
+                <div class="report-scroll-box">
+                    <div id="capture-area" style="margin: 0 auto; width: 1100px; min-width: 1100px; background: white; padding: 40px; border-radius: 16px; position: relative; box-sizing: border-box; font-family: 'Prompt';">
                         
-                        <div style="flex: 1; display: flex; flex-direction: column;">
-                            <div style="background: linear-gradient(135deg, #e86614 0%, #f58220 100%); padding: 25px; text-align: center; color: white;">
-                                <div style="font-size: 22px; font-weight: 600; line-height: 1.4;">
-                                    คุ้มครอง 3 กลุ่มโรคร้ายแรงยอดฮิต รับเงินก้อนเต็มจำนวน
-                                </div>
-                                <div style="display: flex; justify-content: center; gap: 15px; margin-top: 15px; flex-wrap: wrap;">
-                                    <div style="background: rgba(255,255,255,0.18); padding: 8px 16px; border-radius: 8px; font-size: 16px;">1. โรคมะเร็ง (รวมเมลาโนมาชนิดร้ายแรง)</div>
-                                    <div style="background: rgba(255,255,255,0.18); padding: 8px 16px; border-radius: 8px; font-size: 16px;">2. กลุ่มโรคหัวใจและหลอดเลือด</div>
-                                    <div style="background: rgba(255,255,255,0.18); padding: 8px 16px; border-radius: 8px; font-size: 16px;">3. กลุ่มโรคสมองและระบบประสาท</div>
-                                </div>
-                                <div style="font-size: 34px; font-weight: 700; color: #fffde7; margin-top: 15px; background: rgba(0,0,0,0.18); display: inline-block; padding: 6px 30px; border-radius: 50px;">
-                                    ${formatNum(currentPlan)} บาท
-                                </div>
+                        <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 25px;">
+                            <div>
+                                <h1 style="color: #e86614; font-size: 38px; margin: 0; font-weight: 700; line-height: 1;">เอฟดับบลิวดี บิ๊ก ทรี (FWD Big 3)</h1>
+                                <div style="color: #64748b; font-size: 16px; margin-top: 8px;">แผน ${formatNum(currentPlan)} บาท | อายุรับประกัน: ${age} ปี | เพศ: ${txtGender} | ระยะเวลาคุ้มครอง 5 ปี</div>
                             </div>
-                            <div style="background: #fff5ee; padding: 18px 25px; display: flex; justify-content: center; align-items: center; border-top: 1px solid #ffdcc4;">
-                                <div style="font-size: 17px; color: #1e293b; font-weight: 600;">
-                                    • กรณีเสียชีวิต: <strong style="color:#e86614;">50,000 บาท</strong> &nbsp;&nbsp;|&nbsp;&nbsp; • มะเร็งผิวหนังอื่นๆ (ที่ไม่ใช่เมลาโนมาชนิดร้ายแรง): <strong style="color:#e86614;">50,000 บาท</strong>
-                                </div>
+                            <div>
+                                <img src="logo.png" alt="FWD Insurance" style="height: 75px; object-fit: contain;" onerror="this.style.display='none'">
                             </div>
-                        </div>
-                    </div>
-
-                    <div style="position: relative; margin-top: 40px; margin-bottom: 20px; padding-left: 190px; padding-right: 40px;">
-                        <div style="position: absolute; left: 0; top: 5px; font-size: 20px; font-weight: 700; color: #1e293b;">ระยะเวลา 5 ปี</div>
-                        
-                        <div style="display: flex; justify-content: space-between; align-items: center; position: relative;">
-                            <div style="position: absolute; top: 50%; left: 15px; right: 15px; height: 3px; background: #e86614; z-index: 1; transform: translateY(-50%);"></div>
-                            <div style="z-index: 2; width: 40px; height: 40px; background: white; border: 3px solid #e86614; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px; color: #e86614;">ปี 1</div>
-                            <div style="z-index: 2; width: 40px; height: 40px; background: white; border: 3px solid #e86614; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px; color: #e86614;">ปี 2</div>
-                            <div style="z-index: 2; width: 40px; height: 40px; background: white; border: 3px solid #e86614; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px; color: #e86614;">ปี 3</div>
-                            <div style="z-index: 2; width: 40px; height: 40px; background: white; border: 3px solid #e86614; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px; color: #e86614;">ปี 4</div>
-                            <div style="z-index: 2; width: 40px; height: 40px; background: #e86614; border: 3px solid #e86614; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px; color: white;">ปี 5</div>
                         </div>
 
-                        <div style="margin-top: 25px; display: flex; gap: 20px;">
-                            <div style="flex: 1; background: #fff5ee; border: 1px solid #ffdcc4; border-radius: 14px; padding: 16px 20px; text-align: center;">
-                                <div style="font-size: 14px; color: #64748b;">เบี้ยประกันภัยรายปี</div>
-                                <div style="font-size: 26px; font-weight: 700; color: #e86614;">${formatNum(annualPrem)} บาท/ปี</div>
+                        <div style="display: flex; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #fce4d6;">
+                            <div style="background: #fceea9; width: 190px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: 700; font-size: 22px; color: #1e3b2b; text-align: center; padding: 15px;">
+                                ความคุ้มครอง<br>หลัก
                             </div>
-                            <div style="flex: 1; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 14px; padding: 16px 20px; text-align: center;">
-                                <div style="font-size: 14px; color: #64748b;">หรือเลือกชำระรายเดือน (ประมาณ)</div>
-                                <div style="font-size: 26px; font-weight: 700; color: #06C755;">${formatNum(monthlyPrem)} บาท/เดือน</div>
-                            </div>
-                            <div style="flex: 1; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 16px 20px; text-align: center;">
-                                <div style="font-size: 14px; color: #64748b;">รวมเบี้ยชำระตลอด 5 ปี (รายปี)</div>
-                                <div style="font-size: 26px; font-weight: 700; color: #1e293b;">${formatNum(total5Yr)} บาท</div>
+                            
+                            <div style="flex: 1; display: flex; flex-direction: column;">
+                                <div style="background: linear-gradient(135deg, #e86614 0%, #f58220 100%); padding: 25px; text-align: center; color: white;">
+                                    <div style="font-size: 22px; font-weight: 600; line-height: 1.4;">
+                                        คุ้มครอง 3 กลุ่มโรคร้ายแรงยอดฮิต รับเงินก้อนเต็มจำนวน
+                                    </div>
+                                    <div style="display: flex; justify-content: center; gap: 15px; margin-top: 15px; flex-wrap: wrap;">
+                                        <div style="background: rgba(255,255,255,0.18); padding: 8px 16px; border-radius: 8px; font-size: 16px;">1. โรคมะเร็ง (รวมเมลาโนมาชนิดร้ายแรง)</div>
+                                        <div style="background: rgba(255,255,255,0.18); padding: 8px 16px; border-radius: 8px; font-size: 16px;">2. กลุ่มโรคหัวใจและหลอดเลือด</div>
+                                        <div style="background: rgba(255,255,255,0.18); padding: 8px 16px; border-radius: 8px; font-size: 16px;">3. กลุ่มโรคสมองและระบบประสาท</div>
+                                    </div>
+                                    <div style="font-size: 34px; font-weight: 700; color: #fffde7; margin-top: 15px; background: rgba(0,0,0,0.18); display: inline-block; padding: 6px 30px; border-radius: 50px;">
+                                        ${formatNum(currentPlan)} บาท
+                                    </div>
+                                </div>
+                                <div style="background: #fff5ee; padding: 18px 25px; display: flex; justify-content: center; align-items: center; border-top: 1px solid #ffdcc4;">
+                                    <div style="font-size: 17px; color: #1e293b; font-weight: 600;">
+                                        • กรณีเสียชีวิต: <strong style="color:#e86614;">50,000 บาท</strong> &nbsp;&nbsp;|&nbsp;&nbsp; • มะเร็งผิวหนังอื่นๆ (ที่ไม่ใช่เมลาโนมาชนิดร้ายแรง): <strong style="color:#e86614;">50,000 บาท</strong>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <!-- ส่วนท้าย: ซ้าย = หมายเหตุ, ขวา = ข้อมูลตัวแทน -->
-                    <div style="margin-top: 28px; padding-top: 20px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: flex-end; gap: 28px;">
-                        <div style="flex: 1; font-size: 12px; color: #64748b; line-height: 1.6;">
-                            <strong style="color: #1e293b;">หมายเหตุและเงื่อนไขสำคัญ (FWD Big 3 - T25A):</strong><br>
-                            • เมื่อบริษัทจ่ายผลประโยชน์กรณีเสียชีวิต หรือโรคมะเร็ง (รวมเมลาโนมาชนิดร้ายแรง) หรือกลุ่มโรคเกี่ยวกับหัวใจและหลอดเลือด หรือกลุ่มโรคเกี่ยวกับสมองและระบบประสาท กรมธรรม์จะสิ้นผลบังคับทันที<br>
-                            • รับประกันภัยเฉพาะขั้นอาชีพ 1-2 | พิจารณารับประกันแบบมาตรฐานหรือปฏิเสธการรับประกันเท่านั้น | ไม่สามารถแนบสัญญาเพิ่มเติมอื่นๆ ได้<br>
-                            • แบบประกันภัยนี้สามารถนำเบี้ยประกันภัยบางส่วนไปหักลดหย่อนภาษีเงินได้บุคคลธรรมดาตามเกณฑ์ที่กฎหมายกำหนด (ประกาศอธิบดีกรมสรรพากร ฉบับที่ 383)
+                        <div style="position: relative; margin-top: 40px; margin-bottom: 20px; padding-left: 190px; padding-right: 40px;">
+                            <div style="position: absolute; left: 0; top: 5px; font-size: 20px; font-weight: 700; color: #1e293b;">ระยะเวลา 5 ปี</div>
+                            
+                            <div style="display: flex; justify-content: space-between; align-items: center; position: relative;">
+                                <div style="position: absolute; top: 50%; left: 15px; right: 15px; height: 3px; background: #e86614; z-index: 1; transform: translateY(-50%);"></div>
+                                <div style="z-index: 2; width: 40px; height: 40px; background: white; border: 3px solid #e86614; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px; color: #e86614;">ปี 1</div>
+                                <div style="z-index: 2; width: 40px; height: 40px; background: white; border: 3px solid #e86614; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px; color: #e86614;">ปี 2</div>
+                                <div style="z-index: 2; width: 40px; height: 40px; background: white; border: 3px solid #e86614; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px; color: #e86614;">ปี 3</div>
+                                <div style="z-index: 2; width: 40px; height: 40px; background: white; border: 3px solid #e86614; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px; color: #e86614;">ปี 4</div>
+                                <div style="z-index: 2; width: 40px; height: 40px; background: #e86614; border: 3px solid #e86614; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px; color: white;">ปี 5</div>
+                            </div>
+
+                            <div style="margin-top: 25px; display: flex; gap: 20px;">
+                                <div style="flex: 1; background: #fff5ee; border: 1px solid #ffdcc4; border-radius: 14px; padding: 16px 20px; text-align: center;">
+                                    <div style="font-size: 14px; color: #64748b;">เบี้ยประกันภัยรายปี</div>
+                                    <div style="font-size: 26px; font-weight: 700; color: #e86614;">${formatNum(annualPrem)} บาท/ปี</div>
+                                </div>
+                                <div style="flex: 1; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 14px; padding: 16px 20px; text-align: center;">
+                                    <div style="font-size: 14px; color: #64748b;">หรือเลือกชำระรายเดือน (ประมาณ)</div>
+                                    <div style="font-size: 26px; font-weight: 700; color: #06C755;">${formatNum(monthlyPrem)} บาท/เดือน</div>
+                                </div>
+                                <div style="flex: 1; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 16px 20px; text-align: center;">
+                                    <div style="font-size: 14px; color: #64748b;">รวมเบี้ยชำระตลอด 5 ปี (รายปี)</div>
+                                    <div style="font-size: 26px; font-weight: 700; color: #1e293b;">${formatNum(total5Yr)} บาท</div>
+                                </div>
+                            </div>
                         </div>
-                        
-                        <div style="flex-shrink: 0; display: flex; align-items: center; gap: 14px; background: #fffaf6; border: 1px solid #ffdcc4; border-radius: 14px; padding: 12px 18px;">
-                            <img src="agent.jpg" alt="นฤมล คำใบ" style="width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 2px solid #e86614;" onerror="this.style.display='none'">
-                            <div style="line-height: 1.4;">
-                                <div style="font-size: 11px; color: #64748b;">ดูแลและให้คำปรึกษาโดย</div>
-                                <div style="font-size: 15px; font-weight: 700; color: #1e293b;">นฤมล คำใบ <span style="font-weight: 400; font-size: 13px; color: #64748b;">(ต๋อย)</span></div>
-                                <div style="font-size: 12px; color: #e86614; font-weight: 600;">ผู้จัดการขาย FWD • ใบอนุญาต 6901010926</div>
-                                <div style="font-size: 13px; font-weight: 700; color: #1e293b; margin-top: 2px;"><i class="fa-solid fa-phone" style="color: #e86614; font-size: 11px;"></i> 086-901-7235</div>
+
+                        <div style="margin-top: 28px; padding-top: 20px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: flex-end; gap: 28px;">
+                            <div style="flex: 1; font-size: 12px; color: #64748b; line-height: 1.6;">
+                                <strong style="color: #1e293b;">หมายเหตุและเงื่อนไขสำคัญ (FWD Big 3 - T25A):</strong><br>
+                                • เมื่อบริษัทจ่ายผลประโยชน์กรณีเสียชีวิต หรือโรคมะเร็ง (รวมเมลาโนมาชนิดร้ายแรง) หรือกลุ่มโรคเกี่ยวกับหัวใจและหลอดเลือด หรือกลุ่มโรคเกี่ยวกับสมองและระบบประสาท กรมธรรม์จะสิ้นผลบังคับทันที<br>
+                                • รับประกันภัยเฉพาะขั้นอาชีพ 1-2 | พิจารณารับประกันแบบมาตรฐานหรือปฏิเสธการรับประกันเท่านั้น | ไม่สามารถแนบสัญญาเพิ่มเติมอื่นๆ ได้<br>
+                                • แบบประกันภัยนี้สามารถนำเบี้ยประกันภัยบางส่วนไปหักลดหย่อนภาษีเงินได้บุคคลธรรมดาตามเกณฑ์ที่กฎหมายกำหนด (ประกาศอธิบดีกรมสรรพากร ฉบับที่ 383)
+                            </div>
+                            
+                            <div style="flex-shrink: 0; display: flex; align-items: center; gap: 14px; background: #fffaf6; border: 1px solid #ffdcc4; border-radius: 14px; padding: 12px 18px;">
+                                <img src="agent.jpg" alt="นฤมล คำใบ" style="width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 2px solid #e86614;" onerror="this.style.display='none'">
+                                <div style="line-height: 1.4;">
+                                    <div style="font-size: 11px; color: #64748b;">ดูแลและให้คำปรึกษาโดย</div>
+                                    <div style="font-size: 15px; font-weight: 700; color: #1e293b;">นฤมล คำใบ <span style="font-weight: 400; font-size: 13px; color: #64748b;">(ต๋อย)</span></div>
+                                    <div style="font-size: 12px; color: #e86614; font-weight: 600;">ผู้จัดการขาย FWD • ใบอนุญาต 6901010926</div>
+                                    <div style="font-size: 13px; font-weight: 700; color: #1e293b; margin-top: 2px;"><i class="fa-solid fa-phone" style="color: #e86614; font-size: 11px;"></i> 086-901-7235</div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
                 
                 <div class="action-buttons">
-                    <button onclick="saveAsImage('l')" class="btn-act btn-save" id="save-btn-info"><i class="fa-solid fa-image"></i> เซฟเป็นรูปภาพ</button>
+                    <button onclick="exportHighResImage('l', 'download')" class="btn-act btn-save" id="save-btn-info"><i class="fa-solid fa-download"></i> บันทึกรูปภาพ (HD)</button>
+                    <button onclick="exportHighResImage('l', 'share')" class="btn-act btn-share" id="share-btn-info"><i class="fa-solid fa-share-nodes"></i> แชร์รูปภาพ</button>
                     <button onclick="saveAsPDF('l')" class="btn-act btn-pdf" id="pdf-btn-info"><i class="fa-solid fa-file-pdf"></i> บันทึก PDF</button>
                 </div>
             </div>
@@ -1502,7 +1571,7 @@
         window.scrollTo(0,0);
     }
 
-    // 2. ฟังก์ชันสร้างตารางผลประโยชน์แนวตั้ง (พร้อมโลโก้ FWD มุมบนซ้าย และข้อมูลตัวแทนมุมขวาล่าง)
+    // 2. ฟังก์ชันสร้างตารางผลประโยชน์แนวตั้ง (ล็อกขนาด 900px ไม่ให้เพี้ยนบนมือถือ)
     function openDetailedTable() {
         const age = parseInt(document.getElementById('age-input').value);
         if (isNaN(age) || age < 20 || age > 60) {
@@ -1519,89 +1588,91 @@
         let htmlContent = `
             <button class="close-report-btn" onclick="closeReport()"><i class="fa-solid fa-xmark"></i></button>
             <div id="report-content-wrapper">
-                <div id="capture-area" style="margin: 0 auto; max-width: 950px; background: white; padding: 40px 30px; border-radius: 16px; position: relative; box-sizing: border-box; font-family: 'Prompt';">
-                    <style>
-                        .rp-header { margin-bottom: 25px; }
-                        .rp-header h2 { color: #e86614; font-size: 26px; margin: 0 0 4px; font-weight: 700; }
-                        .rp-header p { color: #64748b; font-size: 15px; margin: 0; }
-                        .rp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; background: #fffaf5; padding: 20px; border-radius: 14px; border: 1px solid #ffdcc4; margin-bottom: 25px; }
-                        .rp-row { display: flex; justify-content: space-between; font-size: 15px; border-bottom: 1px dashed #e2e8f0; padding-bottom: 8px; margin-bottom: 8px; }
-                        .rp-row:last-child { border-bottom: none; padding-bottom: 0; margin-bottom: 0; }
-                        .rp-row span.val { font-weight: 700; color: #e86614; }
+                <div class="mobile-scroll-hint"><i class="fa-solid fa-arrows-left-right"></i> เลื่อนซ้าย-ขวาเพื่อดูตารางเต็ม หรือกดปุ่มด้านล่างเพื่อบันทึก/แชร์</div>
+                <div class="report-scroll-box">
+                    <div id="capture-area" style="margin: 0 auto; width: 900px; min-width: 900px; background: white; padding: 40px 36px; border-radius: 16px; position: relative; box-sizing: border-box; font-family: 'Prompt';">
+                        <style>
+                            .rp-header { margin-bottom: 25px; }
+                            .rp-header h2 { color: #e86614; font-size: 26px; margin: 0 0 4px; font-weight: 700; }
+                            .rp-header p { color: #64748b; font-size: 15px; margin: 0; }
+                            .rp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; background: #fffaf5; padding: 20px 24px; border-radius: 14px; border: 1px solid #ffdcc4; margin-bottom: 25px; }
+                            .rp-row { display: flex; justify-content: space-between; font-size: 15px; border-bottom: 1px dashed #e2e8f0; padding-bottom: 8px; margin-bottom: 8px; }
+                            .rp-row:last-child { border-bottom: none; padding-bottom: 0; margin-bottom: 0; }
+                            .rp-row span.val { font-weight: 700; color: #e86614; }
+                            
+                            #capture-area table { width: 100%; border-collapse: collapse; text-align: center; font-size: 14px; margin-bottom: 25px; }
+                            #capture-area th { background: #e86614; color: white; padding: 12px; border: 1px solid #c8540d; font-weight: 500; }
+                            #capture-area td { padding: 10px 12px; border: 1px solid #e2e8f0; color: #1e293b; }
+                            #capture-area tr:nth-child(even) td { background: #f8fafc; }
+                            .fw-bold { font-weight: 700; color: #e86614; }
+                            .text-left { text-align: left; }
+                        </style>
                         
-                        table { width: 100%; border-collapse: collapse; text-align: center; font-size: 14px; margin-bottom: 25px; }
-                        th { background: #e86614; color: white; padding: 12px; border: 1px solid #c8540d; font-weight: 500; }
-                        td { padding: 10px; border: 1px solid #e2e8f0; color: #1e293b; }
-                        tr:nth-child(even) td { background: #f8fafc; }
-                        .fw-bold { font-weight: 700; color: #e86614; }
-                        .text-left { text-align: left; }
-                    </style>
-                    
-                    <div class="rp-header" style="display: flex; align-items: center; gap: 45px; text-align: left; padding-bottom: 18px; border-bottom: 2px solid #fff2e8;">
-                        <img src="logo.png" alt="FWD Insurance" style="height: 52px; object-fit: contain; flex-shrink: 0;" onerror="this.style.display='none'">
-                        <div>
-                            <h2>ตารางสรุปผลประโยชน์ เอฟดับบลิวดี บิ๊ก ทรี (FWD Big 3)</h2>
-                            <p>แผนความคุ้มครอง ${formatNum(currentPlan)} บาท | ชำระเบี้ย 5 ปี คุ้มครอง 5 ปี (Plan Code: T25A)</p>
+                        <div class="rp-header" style="display: flex; align-items: center; gap: 45px; text-align: left; padding-bottom: 18px; border-bottom: 2px solid #fff2e8;">
+                            <img src="logo.png" alt="FWD Insurance" style="height: 72px; object-fit: contain; flex-shrink: 0;" onerror="this.style.display='none'">
+                            <div>
+                                <h2>ตารางสรุปผลประโยชน์ เอฟดับบลิวดี บิ๊ก ทรี (FWD Big 3)</h2>
+                                <p>แผนความคุ้มครอง ${formatNum(currentPlan)} บาท | ชำระเบี้ย 5 ปี คุ้มครอง 5 ปี (Plan Code: T25A)</p>
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="rp-grid">
-                        <div>
-                            <div class="rp-row"><span>เพศผู้เอาประกัน:</span> <span class="val">${txtGender}</span></div>
-                            <div class="rp-row"><span>อายุเริ่มสัญญา:</span> <span class="val">${age} ปี</span></div>
-                            <div class="rp-row"><span>ระยะเวลาคุ้มครอง / ชำระเบี้ย:</span> <span class="val">5 ปี / 5 ปี</span></div>
+                        <div class="rp-grid">
+                            <div>
+                                <div class="rp-row"><span>เพศผู้เอาประกัน:</span> <span class="val">${txtGender}</span></div>
+                                <div class="rp-row"><span>อายุเริ่มสัญญา:</span> <span class="val">${age} ปี</span></div>
+                                <div class="rp-row"><span>ระยะเวลาคุ้มครอง / ชำระเบี้ย:</span> <span class="val">5 ปี / 5 ปี</span></div>
+                            </div>
+                            <div>
+                                <div class="rp-row"><span>แผนความคุ้มครอง:</span> <span class="val">${formatNum(currentPlan)} บาท</span></div>
+                                <div class="rp-row"><span>งวดการชำระ:</span> <span class="val">${txtPeriod}</span></div>
+                                <div class="rp-row"><span>เบี้ยประกันภัยต่องวด:</span> <span class="val">${priceDisplay} บาท</span></div>
+                            </div>
                         </div>
-                        <div>
-                            <div class="rp-row"><span>แผนความคุ้มครอง:</span> <span class="val">${formatNum(currentPlan)} บาท</span></div>
-                            <div class="rp-row"><span>งวดการชำระ:</span> <span class="val">${txtPeriod}</span></div>
-                            <div class="rp-row"><span>เบี้ยประกันภัยต่องวด:</span> <span class="val">${priceDisplay} บาท</span></div>
-                        </div>
-                    </div>
 
-                    <h3 style="color: #1e293b; font-size: 18px; margin-bottom: 10px; border-left: 4px solid #e86614; padding-left: 10px;">รายละเอียดผลประโยชน์ความคุ้มครอง</h3>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th style="width: 70%;">รายการผลประโยชน์</th>
-                                <th style="width: 30%;">ความคุ้มครอง (บาท)</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td class="text-left">1) กรณีเสียชีวิต</td>
-                                <td class="fw-bold">50,000</td>
-                            </tr>
-                            <tr>
-                                <td class="text-left">2) กรณีได้รับการวินิจฉัยว่าเจ็บป่วยด้วยโรคมะเร็ง รวมถึงโรคมะเร็งผิวหนังเมลาโนมาชนิดร้ายแรง</td>
-                                <td class="fw-bold">${formatNum(currentPlan)}</td>
-                            </tr>
-                            <tr>
-                                <td class="text-left">3) กรณีได้รับการวินิจฉัยว่าเจ็บป่วยด้วยโรคมะเร็งผิวหนังอื่นๆ ที่ไม่ใช่ผิวหนังเมลาโนมาชนิดร้ายแรง</td>
-                                <td class="fw-bold">50,000</td>
-                            </tr>
-                            <tr>
-                                <td class="text-left">4) กรณีได้รับการวินิจฉัยว่าเจ็บป่วยด้วยโรคในกลุ่มโรคเกี่ยวกับหัวใจและหลอดเลือด</td>
-                                <td class="fw-bold">${formatNum(currentPlan)}</td>
-                            </tr>
-                            <tr>
-                                <td class="text-left">5) กรณีได้รับการวินิจฉัยว่าเจ็บป่วยด้วยโรคในกลุ่มโรคเกี่ยวกับสมองและระบบประสาท</td>
-                                <td class="fw-bold">${formatNum(currentPlan)}</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                        <h3 style="color: #1e293b; font-size: 18px; margin-bottom: 10px; border-left: 4px solid #e86614; padding-left: 10px;">รายละเอียดผลประโยชน์ความคุ้มครอง</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width: 72%;">รายการผลประโยชน์</th>
+                                    <th style="width: 28%;">ความคุ้มครอง (บาท)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="text-left">1) กรณีเสียชีวิต</td>
+                                    <td class="fw-bold">50,000</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-left">2) กรณีได้รับการวินิจฉัยว่าเจ็บป่วยด้วยโรคมะเร็ง รวมถึงโรคมะเร็งผิวหนังเมลาโนมาชนิดร้ายแรง</td>
+                                    <td class="fw-bold">${formatNum(currentPlan)}</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-left">3) กรณีได้รับการวินิจฉัยว่าเจ็บป่วยด้วยโรคมะเร็งผิวหนังอื่นๆ ที่ไม่ใช่ผิวหนังเมลาโนมาชนิดร้ายแรง</td>
+                                    <td class="fw-bold">50,000</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-left">4) กรณีได้รับการวินิจฉัยว่าเจ็บป่วยด้วยโรคในกลุ่มโรคเกี่ยวกับหัวใจและหลอดเลือด</td>
+                                    <td class="fw-bold">${formatNum(currentPlan)}</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-left">5) กรณีได้รับการวินิจฉัยว่าเจ็บป่วยด้วยโรคในกลุ่มโรคเกี่ยวกับสมองและระบบประสาท</td>
+                                    <td class="fw-bold">${formatNum(currentPlan)}</td>
+                                </tr>
+                            </tbody>
+                        </table>
 
-                    <h3 style="color: #1e293b; font-size: 18px; margin-bottom: 10px; border-left: 4px solid #e86614; padding-left: 10px;">ตารางเบี้ยประกันภัยรายปีตลอดสัญญา 5 ปี</h3>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>ปีกรมธรรม์ที่</th>
-                                <th>อายุ (ปี)</th>
-                                <th>เบี้ยประกันภัยรายปี (บาท)</th>
-                                <th>เบี้ยประกันภัยสะสม (บาท)</th>
-                                <th>ความคุ้มครอง 3 กลุ่มโรคร้ายแรง (บาท)</th>
-                            </tr>
-                        </thead>
-                        <tbody>
+                        <h3 style="color: #1e293b; font-size: 18px; margin-bottom: 10px; border-left: 4px solid #e86614; padding-left: 10px;">ตารางเบี้ยประกันภัยรายปีตลอดสัญญา 5 ปี</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ปีกรมธรรม์ที่</th>
+                                    <th>อายุ (ปี)</th>
+                                    <th>เบี้ยประกันภัยรายปี (บาท)</th>
+                                    <th>เบี้ยประกันภัยสะสม (บาท)</th>
+                                    <th>ความคุ้มครอง 3 กลุ่มโรคร้ายแรง (บาท)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
         `;
 
         for(let yr = 1; yr <= 5; yr++) {
@@ -1619,42 +1690,43 @@
         }
 
         htmlContent += `
-                        </tbody>
-                    </table>
+                            </tbody>
+                        </table>
 
-                    <div style="display: flex; gap: 15px; margin-top: 20px;">
-                        <div style="flex:1; background:#fff5ee; padding: 20px; border-radius:14px; text-align:center; border: 1px solid #ffdcc4;">
-                            <div style="font-size:14px; color:#64748b; margin-bottom:5px;">รวมเบี้ยประกันภัยรายปีตลอด 5 ปี</div>
-                            <div style="font-size:24px; font-weight:700; color:#e86614;">${formatNum(total5Yr)} บาท</div>
-                        </div>
-                        <div style="flex:1; background:#f0fdf4; padding: 20px; border-radius:14px; text-align:center; border: 1px solid #bbf7d0;">
-                            <div style="font-size:14px; color:#64748b; margin-bottom:5px;">วงเงินคุ้มครอง 3 กลุ่มโรคร้ายแรง</div>
-                            <div style="font-size:24px; font-weight:700; color:#06C755;">${formatNum(currentPlan)} บาท</div>
-                        </div>
-                    </div>
-
-                    <!-- ส่วนท้ายแนวตั้ง: ซ้าย = หมายเหตุ, ขวา = ข้อมูลตัวแทน -->
-                    <div style="margin-top: 26px; padding-top: 20px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: flex-end; gap: 24px;">
-                        <div style="flex: 1; font-size: 12px; color: #64748b; text-align: left; line-height: 1.6;">
-                            <strong style="color: #1e293b;">หมายเหตุ:</strong><br>
-                            • เมื่อบริษัทจ่ายผลประโยชน์ข้อ 1), 2), 4) หรือ 5) กรมธรรม์จะสิ้นผลบังคับทันที<br>
-                            • ตารางผลประโยชน์นี้จัดทำขึ้นเพื่อความเข้าใจเบื้องต้น การรับประกันและผลประโยชน์เป็นไปตามเงื่อนไขที่ระบุในกรมธรรม์
+                        <div style="display: flex; gap: 15px; margin-top: 20px;">
+                            <div style="flex:1; background:#fff5ee; padding: 20px; border-radius:14px; text-align:center; border: 1px solid #ffdcc4;">
+                                <div style="font-size:14px; color:#64748b; margin-bottom:5px;">รวมเบี้ยประกันภัยรายปีตลอด 5 ปี</div>
+                                <div style="font-size:24px; font-weight:700; color:#e86614;">${formatNum(total5Yr)} บาท</div>
+                            </div>
+                            <div style="flex:1; background:#f0fdf4; padding: 20px; border-radius:14px; text-align:center; border: 1px solid #bbf7d0;">
+                                <div style="font-size:14px; color:#64748b; margin-bottom:5px;">วงเงินคุ้มครอง 3 กลุ่มโรคร้ายแรง</div>
+                                <div style="font-size:24px; font-weight:700; color:#06C755;">${formatNum(currentPlan)} บาท</div>
+                            </div>
                         </div>
 
-                        <div style="flex-shrink: 0; display: flex; align-items: center; gap: 14px; background: #fffaf6; border: 1px solid #ffdcc4; border-radius: 14px; padding: 12px 18px;">
-                            <img src="agent.jpg" alt="นฤมล คำใบ" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid #e86614;" onerror="this.style.display='none'">
-                            <div style="line-height: 1.4; text-align: left;">
-                                <div style="font-size: 11px; color: #64748b;">ดูแลและให้คำปรึกษาโดย</div>
-                                <div style="font-size: 15px; font-weight: 700; color: #1e293b;">นฤมล คำใบ <span style="font-weight: 400; font-size: 13px; color: #64748b;">(ต๋อย)</span></div>
-                                <div style="font-size: 12px; color: #e86614; font-weight: 600;">ผู้จัดการขาย FWD • ใบอนุญาต 6901010926</div>
-                                <div style="font-size: 13px; font-weight: 700; color: #1e293b; margin-top: 2px;"><i class="fa-solid fa-phone" style="color: #e86614; font-size: 11px;"></i> 086-901-7235</div>
+                        <div style="margin-top: 26px; padding-top: 20px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: flex-end; gap: 24px;">
+                            <div style="flex: 1; font-size: 12px; color: #64748b; text-align: left; line-height: 1.6;">
+                                <strong style="color: #1e293b;">หมายเหตุ:</strong><br>
+                                • เมื่อบริษัทจ่ายผลประโยชน์ข้อ 1), 2), 4) หรือ 5) กรมธรรม์จะสิ้นผลบังคับทันที<br>
+                                • ตารางผลประโยชน์นี้จัดทำขึ้นเพื่อความเข้าใจเบื้องต้น การรับประกันและผลประโยชน์เป็นไปตามเงื่อนไขที่ระบุในกรมธรรม์
+                            </div>
+
+                            <div style="flex-shrink: 0; display: flex; align-items: center; gap: 14px; background: #fffaf6; border: 1px solid #ffdcc4; border-radius: 14px; padding: 12px 18px;">
+                                <img src="agent.jpg" alt="นฤมล คำใบ" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid #e86614;" onerror="this.style.display='none'">
+                                <div style="line-height: 1.4; text-align: left;">
+                                    <div style="font-size: 11px; color: #64748b;">ดูแลและให้คำปรึกษาโดย</div>
+                                    <div style="font-size: 15px; font-weight: 700; color: #1e293b;">นฤมล คำใบ <span style="font-weight: 400; font-size: 13px; color: #64748b;">(ต๋อย)</span></div>
+                                    <div style="font-size: 12px; color: #e86614; font-weight: 600;">ผู้จัดการขาย FWD • ใบอนุญาต 6901010926</div>
+                                    <div style="font-size: 13px; font-weight: 700; color: #1e293b; margin-top: 2px;"><i class="fa-solid fa-phone" style="color: #e86614; font-size: 11px;"></i> 086-901-7235</div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
                 
                 <div class="action-buttons">
-                    <button onclick="saveAsImage('p')" class="btn-act btn-save" id="save-btn-tbl"><i class="fa-solid fa-image"></i> เซฟเป็นรูปภาพ</button>
+                    <button onclick="exportHighResImage('p', 'download')" class="btn-act btn-save" id="save-btn-tbl"><i class="fa-solid fa-download"></i> บันทึกรูปภาพ (HD)</button>
+                    <button onclick="exportHighResImage('p', 'share')" class="btn-act btn-share" id="share-btn-tbl"><i class="fa-solid fa-share-nodes"></i> แชร์รูปภาพ</button>
                     <button onclick="saveAsPDF('p')" class="btn-act btn-pdf" id="pdf-btn-tbl"><i class="fa-solid fa-file-pdf"></i> บันทึก PDF</button>
                 </div>
             </div>
@@ -1679,69 +1751,136 @@
         stickyBar.classList.toggle('show', lastScrollY > 200);
     }
 
-    function saveAsImage(orientation) {
-        const btnId = orientation === 'l' ? 'save-btn-info' : 'save-btn-tbl';
+    // ฟังก์ชันกลางสำหรับสร้าง Canvas ความละเอียดสูงสุด (Scale 3x, PNG Lossless)
+    async function renderHighResCanvas() {
+        const target = document.getElementById("capture-area");
+        const scrollBox = document.querySelector(".report-scroll-box");
+        if (scrollBox) scrollBox.scrollLeft = 0;
+        window.scrollTo(0, 0);
+
+        await new Promise(r => setTimeout(r, 250));
+
+        return await html2canvas(target, {
+            scale: 3, // ความละเอียดสูงระดับ Ultra HD (3x)
+            backgroundColor: "#ffffff",
+            useCORS: true,
+            allowTaint: false,
+            scrollX: 0,
+            scrollY: 0,
+            windowWidth: target.scrollWidth,
+            windowHeight: target.scrollHeight
+        });
+    }
+
+    // ฟังก์ชันบันทึกและแชร์รูปภาพ (รองรับทั้ง PC และ มือถือ iOS/Android)
+    async function exportHighResImage(orientation, mode) {
+        const btnId = mode === 'share'
+            ? (orientation === 'l' ? 'share-btn-info' : 'share-btn-tbl')
+            : (orientation === 'l' ? 'save-btn-info' : 'save-btn-tbl');
         const btn = document.getElementById(btnId);
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ประมวลผล...';
+        const originalHTML = btn.innerHTML;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> กำลังสร้างภาพ HD...';
         btn.disabled = true;
 
-        window.scrollTo(0,0);
-        const target = document.getElementById("capture-area");
-        
-        setTimeout(() => {
-            html2canvas(target, { scale: 2, backgroundColor: "#ffffff", useCORS: true }).then(canvas => {
-                const imgData = canvas.toDataURL("image/jpeg", 0.95);
+        const fileName = `FWD_Big3_${orientation === 'l' ? 'Info' : 'Table'}_Plan${currentPlan}_Age${document.getElementById('age-input').value}.png`;
+
+        try {
+            const canvas = await renderHighResCanvas();
+            const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png', 1.0));
+            const file = new File([blob], fileName, { type: 'image/png' });
+
+            // โหมดแชร์ (เปิด Share Sheet บนมือถือ เพื่อส่งเข้า LINE หรือกด "บันทึกรูปภาพ" ลงอัลบั้มได้ทันที)
+            if (mode === 'share' && navigator.canShare && navigator.canShare({ files: [file] })) {
+                await navigator.share({
+                    files: [file],
+                    title: 'สรุปแผนประกัน FWD Big 3',
+                    text: `แผนความคุ้มครอง ${formatNum(currentPlan)} บาท`
+                });
+                btn.innerHTML = originalHTML;
+                btn.disabled = false;
+                return;
+            }
+
+            // โหมดดาวน์โหลดตรงลงเครื่อง (ใช้ได้ทั้ง PC และ Android)
+            const blobUrl = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = blobUrl;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            // หากเป็นมือถือ iOS (ซึ่งบางครั้ง Safari ไม่ยอมดาวน์โหลดตรง) หรือกดแชร์บน PC ให้แสดงภาพพรีวิวเพื่อให้แตะค้าง/คลิกขวาได้ด้วย
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+            if (isIOS || mode === 'share') {
+                const imgData = canvas.toDataURL("image/png", 1.0);
                 const wrapper = document.getElementById('report-content-wrapper');
                 wrapper.innerHTML = `
                     <div style="text-align:center; padding: 20px; max-width: 900px; margin: 0 auto;">
-                        <h2 style="color: #06C755; margin:0 0 10px 0;"><i class="fa-solid fa-circle-check"></i> สร้างภาพสำเร็จ!</h2>
-                        <div style="background: #fef3c7; color: #92400e; padding: 15px; border-radius: 10px; margin-bottom: 20px; font-size: 14px; text-align:left;">
-                            แตะค้างที่รูปภาพด้านล่างเพื่อ <b>"บันทึกรูปภาพ"</b> ลงเครื่อง หรือคลิกขวาแล้วเลือก Save image as...
+                        <h2 style="color: #06C755; margin:0 0 10px 0;"><i class="fa-solid fa-circle-check"></i> สร้างภาพความละเอียดสูงสำเร็จ!</h2>
+                        <div style="background: #fef3c7; color: #92400e; padding: 14px 18px; border-radius: 12px; margin-bottom: 18px; font-size: 14px; text-align:left; line-height: 1.5;">
+                            • <b>บนมือถือ (iPhone/Android):</b> แตะค้างที่รูปภาพด้านล่างแล้วเลือก <b>"บันทึกลงแอปรูปภาพ"</b> หรือกดปุ่มแชร์<br>
+                            • <b>บนคอมพิวเตอร์:</b> ไฟล์ถูกดาวน์โหลดลงเครื่องแล้ว หรือคลิกขวาที่รูปเลือก Save image as...
                         </div>
                         <img src="${imgData}" onclick="document.getElementById('lightbox-img').src=this.src; document.getElementById('image-lightbox').style.display='block';" style="max-width: 100%; height: auto; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); cursor: zoom-in; border:1px solid #e2e8f0;">
-                        <br><br>
-                        <button onclick="closeReport()" style="background:#1e293b; color:white; padding:12px 35px; border:none; border-radius:10px; font-family:'Prompt'; font-size:16px; cursor:pointer;">
-                            <i class="fa-solid fa-arrow-left"></i> กลับสู่หน้าหลัก
-                        </button>
+                        <div style="margin-top: 22px; display: flex; justify-content: center; gap: 12px; flex-wrap: wrap;">
+                            <a href="${blobUrl}" download="${fileName}" class="btn-act btn-save" style="text-decoration:none;"><i class="fa-solid fa-download"></i> ดาวน์โหลดอีกครั้ง</a>
+                            <button onclick="closeReport()" class="btn-act" style="background:#1e293b; color:white;"><i class="fa-solid fa-arrow-left"></i> กลับสู่หน้าหลัก</button>
+                        </div>
                     </div>
                 `;
-            }).catch(err => {
-                alert("Error: " + err.message);
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fa-solid fa-image"></i> เซฟเป็นรูปภาพ';
-            });
-        }, 500);
+            } else {
+                btn.innerHTML = '<i class="fa-solid fa-check"></i> บันทึกสำเร็จ!';
+                setTimeout(() => {
+                    btn.innerHTML = originalHTML;
+                    btn.disabled = false;
+                }, 1800);
+            }
+        } catch (err) {
+            if (err.name !== 'AbortError') {
+                alert("เกิดข้อผิดพลาดในการสร้างภาพ: " + err.message);
+            }
+            btn.innerHTML = originalHTML;
+            btn.disabled = false;
+        }
     }
 
-    function saveAsPDF(orientation) {
+    async function saveAsPDF(orientation) {
         const btnId = orientation === 'l' ? 'pdf-btn-info' : 'pdf-btn-tbl';
         const btn = document.getElementById(btnId);
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> สร้าง PDF...';
+        const originalHTML = btn.innerHTML;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> สร้าง PDF ความละเอียดสูง...';
         btn.disabled = true;
 
-        window.scrollTo(0,0);
-        const target = document.getElementById("capture-area");
+        try {
+            const canvas = await renderHighResCanvas();
+            const imgData = canvas.toDataURL('image/png', 1.0);
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF(orientation, 'mm', 'a4');
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
+            
+            const margin = 10;
+            let imgW = pdfWidth - (margin * 2);
+            let imgH = (canvas.height * imgW) / canvas.width;
 
-        setTimeout(() => {
-            html2canvas(target, { scale: 2, backgroundColor: "#ffffff", useCORS: true }).then(canvas => {
-                const imgData = canvas.toDataURL('image/jpeg', 0.95);
-                const { jsPDF } = window.jspdf;
-                const pdf = new jsPDF(orientation, 'mm', 'a4');
-                const pdfWidth = pdf.internal.pageSize.getWidth();
-                
-                const margin = 10;
-                const pdfWidthWithMargin = pdfWidth - (margin * 2);
-                const imgHeightWithMargin = (canvas.height * pdfWidthWithMargin) / canvas.width;
-                
-                pdf.addImage(imgData, 'JPEG', margin, margin, pdfWidthWithMargin, imgHeightWithMargin);
-                
-                const fileName = `FWD_Big3_Plan${currentPlan}_Age${document.getElementById('age-input').value}.pdf`;
-                pdf.save(fileName);
-                
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fa-solid fa-file-pdf"></i> บันทึก PDF';
-            });
-        }, 500);
+            // ปรับสัดส่วนอัตโนมัติไม่ให้ล้นความสูงหน้ากระดาษ A4
+            if (imgH > pdfHeight - (margin * 2)) {
+                imgH = pdfHeight - (margin * 2);
+                imgW = (canvas.width * imgH) / canvas.height;
+            }
+            const xOffset = (pdfWidth - imgW) / 2;
+            
+            pdf.addImage(imgData, 'PNG', xOffset, margin, imgW, imgH, undefined, 'FAST');
+            
+            const fileName = `FWD_Big3_Plan${currentPlan}_Age${document.getElementById('age-input').value}.pdf`;
+            pdf.save(fileName);
+        } catch (err) {
+            alert("เกิดข้อผิดพลาดในการสร้าง PDF: " + err.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalHTML;
+        }
     }
 
     window.addEventListener('scroll', () => {
